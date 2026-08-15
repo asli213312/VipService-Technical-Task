@@ -37,6 +37,20 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    networks:
+      - app
+    restart: unless-stopped
+    
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:${NGINX_EXPORTER_VERSION}
+    container_name: nginx-exporter
+    command:
+      - -nginx.scrape-uri=http://nginx:80/status
+    ports:
+      - "9113:9113"
+    depends_on:
+      - nginx
     networks:
       - app
     restart: unless-stopped
