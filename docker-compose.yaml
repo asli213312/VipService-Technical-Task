@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        HASHICORP_HTTP_VERSION: ${HASHICORP_HTTP_VERSION}
+    container_name: backend
+    restart: unless-stopped
+    networks:
+      - app
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+      args:
+        NGINX_VERSION: ${NGINX_VERSION}
+    container_name: nginx
+    restart: unless-stopped
+    ports: 
+      - "${NGINX_PORT}:80"
+    depends_on: 
+      - backend
+    networks:
+      - app
+
+networks:
+  app:
+    driver: bridge
