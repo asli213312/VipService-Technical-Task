@@ -37,7 +37,6 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-      - '--web.enable-lifecycle'
     networks:
       - app
     restart: unless-stopped
@@ -54,6 +53,19 @@ services:
     networks:
       - app
     restart: unless-stopped
+    
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:${CADVISOR_VERSION}
+    ports:
+      - "8081:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    privileged: true
+    networks:
+      - app
   
   grafana:
     image: grafana/grafana:${GRAFANA_VERSION}
