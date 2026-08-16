@@ -11,6 +11,7 @@ services:
     restart: unless-stopped
     networks:
       - app
+    mem_limit: 256m
 
   nginx:
     build:
@@ -28,9 +29,11 @@ services:
       - app
     volumes:
       - ./nginx/logs:/var/log/nginx
+    mem_limit: 256m
   
   prometheus:
     image: prom/prometheus:${PROMETHEUS_VERSION}
+    container_name: prometheus
     ports:
       - "9090:9090"
     volumes:
@@ -42,9 +45,11 @@ services:
     networks:
       - app
     restart: unless-stopped
+    mem_limit: 512m
     
   grafana:
     image: grafana/grafana:${GRAFANA_VERSION}
+    container_name: grafana
     ports:
       - "3000:3000"
     environment:
@@ -58,6 +63,7 @@ services:
     networks:
       - app
     restart: unless-stopped
+    mem_limit: 256m
     
   nginx-exporter:
     image: nginx/nginx-prometheus-exporter:${NGINX_EXPORTER_VERSION}
@@ -88,6 +94,7 @@ services:
     
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:${CADVISOR_VERSION}
+    container_name: cadvisor
     ports:
       - "8081:8080"
     volumes:
