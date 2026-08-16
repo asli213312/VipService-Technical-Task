@@ -1,0 +1,120 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        HASHICORP_HTTP_VERSION: {{ hashicorp_http_version }}
+    container_name: backend
+    restart: unless-stopped
+    networks:
+      - app
+    mem_limit: {{ backend_mem_limit }}
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+      args:
+        NGINX_VERSION: {{ nginx_version }}
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - "{{ nginx_port }}:80"
+    depends_on:
+      - backend
+    networks:
+      - app
+    volumes:
+      - ./nginx/logs:/var/log/nginx
+    mem_limit: {{ nginx_mem_limit }}
+
+  prometheus:
+    image: prom/prometheus:{{ prometheus_version }}
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    networks:
+      - app
+    restart: unless-stopped
+    mem_limit: {{ prometheus_mem_limit }}
+
+  grafana:
+    image: grafana/grafana:{{ grafana_version }}
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD={{ grafana_admin_password }}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+    networks:
+      - app
+    restart: unless-stopped
+    mem_limit: {{ grafana_mem_limit }}
+
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:{{ nginx_exporter_version }}
+    container_name: nginx-exporter
+    command:
+      - -nginx.scrape-uri=http://nginx:80/status
+    ports:
+      - "9113:9113"
+    depends_on:
+      - nginx
+    networks:
+      - app
+    restart: unless-stopped
+    mem_limit: {{ nginx_exporter_mem_limit }}
+
+  nginxlog-exporter:
+    image: quay.io/martinhelmich/prometheus-nginxlog-exporter:{{ nginxlog_exporter_version }}
+    container_name: nginxlog-exporter
+    restart: unless-stopped
+    ports:
+      - "4040:4040"
+    volumes:
+      - ./nginx/logs:/var/log/nginx:ro
+      - ./nginx/nginxlog/nginxlog.hcl:/etc/nginxlog/nginxlog.hcl:ro
+    command:
+      - -config-file=/etc/nginxlog/nginxlog.hcl
+    networks:
+      - app
+    mem_limit: {{ nginxlog_exporter_mem_limit }}
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:{{ cadvisor_version }}
+    container_name: cadvisor
+    ports:
+      - "8081:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    privileged: true
+    networks:
+      - app
+    mem_limit: {{ cadvisor_mem_limit }}
+
+volumes:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  app:
+    driver: bridge
