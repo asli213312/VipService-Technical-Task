@@ -26,6 +26,8 @@ services:
       - backend
     networks:
       - app
+    volumes:
+      - ./nginx/logs:/var/log/nginx
   
   prometheus:
     image: prom/prometheus:${PROMETHEUS_VERSION}
@@ -37,6 +39,22 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
+    networks:
+      - app
+    restart: unless-stopped
+    
+  grafana:
+    image: grafana/grafana:${GRAFANA_VERSION}
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
     networks:
       - app
     restart: unless-stopped
@@ -53,6 +71,20 @@ services:
     networks:
       - app
     restart: unless-stopped
+  
+  nginxlog-exporter:
+    image: quay.io/martinhelmich/prometheus-nginxlog-exporter:${NGINXLOG_EXPORTER_VERSION}
+    container_name: nginxlog-exporter
+    restart: unless-stopped
+    ports:
+      - "4040:4040"
+    volumes:
+      - ./nginx/logs:/var/log/nginx:ro
+      - ./nginx/nginxlog/nginxlog.hcl:/etc/nginxlog/nginxlog.hcl:ro
+    command:
+      - -config-file=/etc/nginxlog/nginxlog.hcl
+    networks:
+      - app
     
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:${CADVISOR_VERSION}
@@ -66,22 +98,6 @@ services:
     privileged: true
     networks:
       - app
-  
-  grafana:
-    image: grafana/grafana:${GRAFANA_VERSION}
-    ports:
-      - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    volumes:
-      - grafana-data:/var/lib/grafana
-      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
-    depends_on:
-      - prometheus
-    networks:
-      - app
-    restart: unless-stopped
       
 volumes:
   prometheus-data:
