@@ -1,0 +1,29 @@
+---
+- name: Deploy stack
+  hosts: servers
+  become: yes
+  vars_files:
+    - group_vars/all.yml
+  
+  pre_tasks:
+    - name: Validate required variables
+      assert:
+        that:
+          - project_dir is defined
+          - deploy_user is defined
+        fail_msg: "Required variables are not defined"
+      tags: [always]
+  
+  roles:
+    - role: common
+      tags: [common]
+    - role: docker
+      tags: [docker]
+    - role: deploy
+      tags: [deploy]
+
+  post_tasks:
+    - name: Final health summary
+      debug:
+        msg: "Deployment completed."
+      tags: [always]

@@ -1,0 +1,8 @@
+---
+- name: Include project copy tasks
+  include_tasks: copy_project.yml
+  tags: [deploy, copy]
+
+- name: Include services start tasks
+  include_tasks: start_services.yml
+  tags: [deploy, start]

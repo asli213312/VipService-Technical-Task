@@ -1,0 +1,8 @@
+---
+- name: Include Docker installation
+  include_tasks: install.yml
+  tags: [docker, install]
+
+- name: Include user configuration
+  include_tasks: user.yml
+  tags: [docker, user]

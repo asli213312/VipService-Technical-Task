@@ -1,6 +1,11 @@
-version: '3.8'
+# VipService stack: demo app (backend+nginx) + monitoring (prometheus/grafana/exporters).
+# This file is rendered by Ansible; do not edit the copy on the server manually.
+# Fixed project name: redeploy from any directory updates the SAME stack,
+# preventing container-name and port conflicts between deployments.
+name: {{ project_name }}
 
 services:
+  # Demo application backend (hashicorp/http-echo)
   backend:
     build:
       context: ./backend
@@ -34,16 +39,12 @@ services:
   prometheus:
     image: prom/prometheus:{{ prometheus_version }}
     container_name: prometheus
-    ports:
-      - "9090:9090"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-      - '--web.enable-lifecycle'
-      - '--web.enable-admin-api'
     networks:
       - app
     restart: unless-stopped
@@ -55,7 +56,9 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD={{ grafana_admin_password }}
+      # Credentials are injected from .env at compose startup (no secrets in VCS-tracked yaml).
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
@@ -72,8 +75,6 @@ services:
     container_name: nginx-exporter
     command:
       - -nginx.scrape-uri=http://nginx:80/status
-    ports:
-      - "9113:9113"
     depends_on:
       - nginx
     networks:
@@ -85,8 +86,6 @@ services:
     image: quay.io/martinhelmich/prometheus-nginxlog-exporter:{{ nginxlog_exporter_version }}
     container_name: nginxlog-exporter
     restart: unless-stopped
-    ports:
-      - "4040:4040"
     volumes:
       - ./nginx/logs:/var/log/nginx:ro
       - ./nginx/nginxlog/nginxlog.hcl:/etc/nginxlog/nginxlog.hcl:ro
@@ -99,8 +98,6 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:{{ cadvisor_version }}
     container_name: cadvisor
-    ports:
-      - "8081:8080"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro

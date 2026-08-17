@@ -1,0 +1,40 @@
+---
+- name: Ensure project directory exists
+  file:
+    path: "{{ project_dir }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: '0755'
+
+- name: Sync project files
+  synchronize:
+    src: "{{ playbook_dir }}/../"
+    dest: "{{ project_dir }}/"
+    delete: yes
+    rsync_opts:
+      - "--exclude=.git"            
+      - "--exclude=ansible"
+      - "--exclude=node_modules"
+      - "--exclude=*.log"
+      - "--exclude=.env"
+      - "--exclude=tests"
+      - "--exclude=README.md"
+      - "--exclude=.gitignore"
+  notify: restart services
+  
+- name: Copy .env file with secrets (no Vault) # for test task
+  copy:
+    src: "{{ playbook_dir }}/../.env"
+    dest: "{{ project_dir }}/.env"
+    mode: '0600'
+  notify: restart services
+
+- name: Render docker-compose.yml from template
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ project_dir }}/docker-compose.yaml"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: '0644'
+  notify: restart services
