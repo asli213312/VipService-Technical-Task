@@ -1,3 +1,4 @@
+# prometheus-nginxlog-exporter config: turns nginx access.log lines into metrics.
 listen {
   port = 4040
   address = "0.0.0.0"
