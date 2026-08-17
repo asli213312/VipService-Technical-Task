@@ -1,10 +1,12 @@
 ---
+# Modern apt verifies repo signatures with a key stored in /etc/apt/keyrings
 - name: Ensure keyrings directory exists
   file:
     path: /etc/apt/keyrings
     state: directory
     mode: '0755'
 
+# This key signs the Docker repository metadata; apt checks it on every update.
 - name: Add Docker GPG key
   get_url:
     url: "{{ docker_apt_key_url }}"
@@ -18,6 +20,8 @@
     filename: docker
     update_cache: yes
 
+# docker-compose-plugin provides the `docker compose` v2 subcommand;
+# no standalone docker-compose binary is needed anymore.
 - name: Install Docker packages
   apt:
     name: "{{ docker_packages }}"
