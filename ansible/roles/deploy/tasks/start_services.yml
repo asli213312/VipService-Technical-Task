@@ -7,34 +7,8 @@
     recreate: auto
     remove_orphans: true
     wait: true
+    wait_timeout: 180
   register: compose_up
-
-- name: Wait until all containers are running (fail on exited)
-  shell: |
-    cd {{ project_dir }}
-
-    # Fail fast
-    if docker compose ps | awk 'NR>1 && NF>0' | grep -q "Exited"; then
-      echo "FATAL: some containers exited:"
-      docker compose ps
-      exit 2
-    fi
-
-    # Wait " Up " services
-    not_up=$(docker compose ps | awk 'NR>1 && NF>0' | grep -v " Up " || true)
-    if [ -n "$not_up" ]; then
-      echo "Not Up yet:"
-      echo "$not_up"
-      exit 1
-    fi
-
-    echo "All containers are Up"
-  register: wait_result
-  until: wait_result.rc == 0
-  failed_when: wait_result.rc == 2
-  retries: 30
-  delay: 3
-  changed_when: false
 
 - name: Get final container status
   command:

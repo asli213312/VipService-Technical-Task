@@ -107,10 +107,36 @@ services:
     networks:
       - app
     mem_limit: {{ cadvisor_mem_limit }}
+    
+  loki:
+    image: grafana/loki:{{ loki_version }}
+    container_name: loki
+    restart: unless-stopped
+    volumes:
+      - loki-data:/loki
+    networks:
+      - app
+    mem_limit: {{ loki_mem_limit }}
+    
+  promtail:
+    image: grafana/promtail:{{ promtail_version }}
+    container_name: promtail
+    restart: unless-stopped
+    volumes:
+      - ./loki/promtail.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./nginx/logs:/var/log/nginx-host:ro
+    depends_on:
+      - loki
+    networks:
+      - app
+    mem_limit: {{ promtail_mem_limit }}
 
 volumes:
   prometheus-data:
   grafana-data:
+  loki-data:
 
 networks:
   app:

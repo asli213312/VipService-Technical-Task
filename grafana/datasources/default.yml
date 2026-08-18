@@ -1,5 +1,3 @@
-apiVersion: 1
-
 datasources:
   - name: prometheus-local
     uid: bfv9j5te82t4wb
@@ -9,3 +7,10 @@ datasources:
     isDefault: true
     jsonData:
       httpMethod: POST
+      
+  - name: loki
+    uid: loki-local
+    type: loki
+    url: http://loki:3100
+    access: proxy
+    isDefault: false
