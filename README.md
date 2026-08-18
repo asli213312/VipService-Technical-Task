@@ -114,6 +114,7 @@ curl http://localhost/ping          # → pong
 | **Backend Overview** | RPS, ошибки 5xx, CPU/RAM контейнеров |
 | **Logs** | Логи backend и nginx |
 
+![Backend Overview](docs/overview.png)
 ---
 
 ## 📝 Логирование (Loki + Promtail)
