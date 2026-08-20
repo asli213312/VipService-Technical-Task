@@ -4,39 +4,41 @@
 # preventing container-name and port conflicts between deployments.
 name: {{ project_name }}
 
+x-defaults: &defaults
+  restart: unless-stopped
+  networks:
+    - app
+
 services:
   # Demo application backend (hashicorp/http-echo)
   backend:
+    <<: *defaults
     build:
       context: ./backend
       dockerfile: Dockerfile
       args:
         HASHICORP_HTTP_VERSION: {{ hashicorp_http_version }}
     container_name: backend
-    restart: unless-stopped
-    networks:
-      - app
     mem_limit: {{ backend_mem_limit }}
 
   nginx:
+    <<: *defaults
     build:
       context: ./nginx
       dockerfile: Dockerfile
       args:
         NGINX_VERSION: {{ nginx_version }}
     container_name: nginx
-    restart: unless-stopped
     ports:
       - "{{ nginx_port }}:80"
     depends_on:
       - backend
-    networks:
-      - app
     volumes:
       - ./nginx/logs:/var/log/nginx
     mem_limit: {{ nginx_mem_limit }}
 
   prometheus:
+    <<: *defaults
     image: prom/prometheus:{{ prometheus_version }}
     container_name: prometheus
     volumes:
@@ -45,12 +47,10 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-    networks:
-      - app
-    restart: unless-stopped
     mem_limit: {{ prometheus_mem_limit }}
 
   grafana:
+    <<: *defaults
     image: grafana/grafana:{{ grafana_version }}
     container_name: grafana
     ports:
@@ -65,37 +65,31 @@ services:
       - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
     depends_on:
       - prometheus
-    networks:
-      - app
-    restart: unless-stopped
     mem_limit: {{ grafana_mem_limit }}
 
   nginx-exporter:
+    <<: *defaults
     image: nginx/nginx-prometheus-exporter:{{ nginx_exporter_version }}
     container_name: nginx-exporter
     command:
       - -nginx.scrape-uri=http://nginx:80/status
     depends_on:
       - nginx
-    networks:
-      - app
-    restart: unless-stopped
     mem_limit: {{ nginx_exporter_mem_limit }}
 
   nginxlog-exporter:
+    <<: *defaults
     image: quay.io/martinhelmich/prometheus-nginxlog-exporter:{{ nginxlog_exporter_version }}
     container_name: nginxlog-exporter
-    restart: unless-stopped
     volumes:
       - ./nginx/logs:/var/log/nginx:ro
       - ./nginx/nginxlog/nginxlog.hcl:/etc/nginxlog/nginxlog.hcl:ro
     command:
       - -config-file=/etc/nginxlog/nginxlog.hcl
-    networks:
-      - app
     mem_limit: {{ nginxlog_exporter_mem_limit }}
 
   cadvisor:
+    <<: *defaults
     image: gcr.io/cadvisor/cadvisor:{{ cadvisor_version }}
     container_name: cadvisor
     volumes:
@@ -104,24 +98,20 @@ services:
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
     privileged: true
-    networks:
-      - app
     mem_limit: {{ cadvisor_mem_limit }}
     
   loki:
+    <<: *defaults
     image: grafana/loki:{{ loki_version }}
     container_name: loki
-    restart: unless-stopped
     volumes:
       - loki-data:/loki
-    networks:
-      - app
     mem_limit: {{ loki_mem_limit }}
     
   promtail:
+    <<: *defaults
     image: grafana/promtail:{{ promtail_version }}
     container_name: promtail
-    restart: unless-stopped
     volumes:
       - ./loki/promtail.yml:/etc/promtail/config.yml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -129,8 +119,6 @@ services:
       - ./nginx/logs:/var/log/nginx-host:ro
     depends_on:
       - loki
-    networks:
-      - app
     mem_limit: {{ promtail_mem_limit }}
 
 volumes:

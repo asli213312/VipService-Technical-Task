@@ -1,0 +1,56 @@
+---
+- name: Stop stack
+  hosts: servers
+  vars_files:
+    - group_vars/all.yml
+  become: yes
+
+  pre_tasks:
+    - name: Validate required variables
+      assert:
+        that:
+          - project_dir is defined
+          - deploy_user is defined
+        fail_msg: "Required variables (project_dir, deploy_user) are not defined"
+      tags: [always]
+
+    - name: Check if project directory exists
+      stat:
+        path: "{{ project_dir }}"
+      register: project_dir_stat
+
+    - name: Fail if project directory does not exist
+      fail:
+        msg: "Project directory {{ project_dir }} does not exist. Nothing to stop."
+      when: not project_dir_stat.stat.exists
+
+    - name: Check if any containers from this project are running
+      shell: |
+        docker ps --filter "label=com.docker.compose.project={{ project_dir | basename }}" --format "{{ '{{.Names}}' }}"
+      register: running_containers
+      changed_when: false
+      when: project_dir_stat.stat.exists
+
+    - name: Display running containers
+      debug:
+        msg: "Running containers: {{ running_containers.stdout_lines }}"
+      when: running_containers.stdout != ""
+
+    - name: Fail if no containers are running
+      fail:
+        msg: "No containers from project {{ project_dir | basename }} are running. Skipping stop."
+      when: running_containers.stdout == ""
+
+  tasks:
+    - name: Stop and remove containers
+      community.docker.docker_compose_v2:
+        project_src: "{{ project_dir }}"
+        state: absent
+        remove_volumes: false
+      register: stop_result
+      when: running_containers.stdout != ""
+
+    - name: Display stop result
+      debug:
+        msg: "Containers stopped and removed successfully."
+      when: stop_result is defined

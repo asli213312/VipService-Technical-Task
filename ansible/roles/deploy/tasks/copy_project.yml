@@ -18,7 +18,7 @@
       - "--exclude=node_modules"
       - "--exclude=*.log"
       - "--exclude=.env"
-      - "--exclude=tests"
+      - "--exclude=docs"
       - "--exclude=README.md"
       - "--exclude=.gitignore"
   notify: restart services

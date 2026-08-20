@@ -18,6 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
+  "id": 1,
   "links": [],
   "panels": [
     {
@@ -345,7 +346,7 @@
               }
             ]
           },
-          "unit": "percentunit"
+          "unit": "percent"
         },
         "overrides": [
           {
@@ -388,8 +389,8 @@
             "last",
             "max"
           ],
-          "displayMode": "list",
-          "placement": "bottom",
+          "displayMode": "table",
+          "placement": "right",
           "showLegend": false
         },
         "tooltip": {
@@ -404,7 +405,7 @@
             "uid": "bfv9j5te82t4wb"
           },
           "editorMode": "code",
-          "expr": "sum by (name) (rate(container_cpu_usage_seconds_total{name=~\"nginx|backend|prometheus|grafana|cadvisor|nginx-exporter|nginxlog-exporter\"}[1m]))",
+          "expr": "sum by (name) (\r\n  rate(container_cpu_usage_seconds_total{name!=\"\"}[1m])\r\n) / 2 * 100",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,
@@ -416,7 +417,7 @@
             "uid": "bfv9j5te82t4wb"
           },
           "editorMode": "code",
-          "expr": "sum by (name) (rate(container_cpu_cfs_throttled_seconds_total{name=~\"nginx|backend|prometheus|grafana|cadvisor|nginx-exporter|nginxlog-exporter\"}[1m]))",
+          "expr": "sum by (name) (\r\n  rate(container_cpu_cfs_throttled_seconds_total{name!=\"\"}[1m])\r\n) / 2 * 100",
           "hide": false,
           "instant": false,
           "legendFormat": "{{label_name}} throttled",
@@ -515,6 +516,14 @@
               {
                 "id": "custom.fillOpacity",
                 "value": 20
+              },
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": true,
+                  "tooltip": false,
+                  "viz": false
+                }
               }
             ]
           }
@@ -534,7 +543,7 @@
             "max"
           ],
           "displayMode": "table",
-          "placement": "bottom",
+          "placement": "right",
           "showLegend": false
         },
         "tooltip": {
@@ -550,7 +559,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum by (name) (container_memory_working_set_bytes{name=~\"nginx|backend|prometheus|grafana|cadvisor|nginx-exporter|nginxlog-exporter\"})",
+          "expr": "sum by (name) (container_memory_working_set_bytes{name!=\"\"})",
           "instant": false,
           "legendFormat": "{{name}}",
           "range": true,
@@ -562,7 +571,9 @@
             "uid": "bfv9j5te82t4wb"
           },
           "editorMode": "code",
-          "expr": "container_spec_memory_limit_bytes{name=~\"nginx|backend|prometheus|grafana|cadvisor|nginx-exporter|nginxlog-exporter\"} > 0",
+          "exemplar": false,
+          "expr": "container_spec_memory_limit_bytes{name!=\"\"} > 0",
+          "format": "time_series",
           "hide": false,
           "instant": false,
           "legendFormat": "limit {{name}}",
@@ -588,6 +599,6 @@
   "timezone": "browser",
   "title": "Backend Overview",
   "uid": "ffvciqnci35dsc",
-  "version": 3,
+  "version": 6,
   "weekStart": ""
 }
